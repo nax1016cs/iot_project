@@ -103,7 +103,7 @@ int speed_ = 300;
 bool change_time = true;
 int interval =  10;
 const int tree_num = 5;
-int tree [tree_num] = {0, -1, -1, -1, -1};
+int tree [tree_num] = {-1, -1, -1, -1, -1};
 int tree_index = 0;
 int person_idx = 0;
 void create_tree(){
@@ -127,21 +127,32 @@ void loop()
   srand( time(NULL) );
 
   if (change_time == true){
-    interval = rand() % 20 + 10;
+    interval = int((rand() % 20 + 10) /2) *2;
     change_time = false;
   }
     
-  printf("%d\n", interval);
+//  printf("%d\n", interval);
   char person_state[] = {'=', '=', '=','=','=',  '='};
   if(temp % interval == 0) {
     change_time = true;
     create_tree();
     temp = 0;
   }
+//  printCharX('(',font3x7, 35);
+//  printCharX(')',font3x7, 10);
   printCharX(person_state[person_idx++],font3x7, 60);
   person_idx %= 6;
   for (int i=0; i<tree_num; i++){
-    if (tree[tree_index] != -1) 
+    if(tree[i]> 56){
+      printf("%d\n", tree[i]);
+    }
+    if (tree[i] - 60 == -1){
+       printChar('(', font3x7, i);
+    }
+    else if (tree[i] - 60 == 1){
+       printChar(')', font3x7, i);
+    }
+    else if (tree[i] != -1) 
       printChar('@', font3x7, i);
   }
   xPos %= NUM_MAX*8;
@@ -149,7 +160,7 @@ void loop()
   yPos = (idx%2) == 0 ? 0 : 3; 
   refreshAll();
   clr();
-  if (speed_ > 200) speed_--;
+  if (speed_ > 150) speed_--;
   delay(speed_);
 //  int temp_speed = speed_;
 //  while(temp_speed--);
@@ -273,7 +284,7 @@ void printChar(unsigned char c, const uint8_t *font, unsigned int tree_idx)
   if(tree[tree_idx]>NUM_MAX*8) return;
   int w = printCharX(c, font, tree[tree_idx]);
   tree[tree_idx] += 1;
-  printf("tree: %d\n",  tree[tree_idx]);
+//  printf("tree: %d\n",  tree[tree_idx]);
 }
 
 // =======================================================================
