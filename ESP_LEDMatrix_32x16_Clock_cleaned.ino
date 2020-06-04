@@ -28,6 +28,9 @@
 */
 
 #include <ESP8266WiFi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define NUM_MAX 8
 #define LINE_WIDTH 32
@@ -52,8 +55,8 @@
 // =======================================================================
 // Your config below!
 // =======================================================================
-const char* ssid     = "HAHA";     // SSID of local network
-const char* password = "0516097";   // Password on network
+const char* ssid     = "nCOV-19";     // SSID of local network
+const char* password = "qwerty654321";   // Password on network
 long utcOffset = 1;                    // UTC for Warsaw,Poland
 // =======================================================================
 
@@ -66,7 +69,7 @@ String buf="";
 
 int xPos=0, yPos=0;
 int clockOnly = 0;
-
+int idx = 0;
 void setup() 
 {
   buf.reserve(500);
@@ -95,10 +98,22 @@ void setup()
 
 unsigned int curTime,updTime=0;
 int dots,mode;
-int idx = 0;
-byte house[] = {0x00,0x00,};
+int temp = 0;
+int speed_ = 300;
+bool change_time = true;
+int interval =  10;
+const int tree_num = 5;
+int tree [tree_num] = {0, -1, -1, -1, -1};
+int tree_index = 0;
+int person_idx = 0;
+void create_tree(){
+    tree[tree_index++] = 0;
+    tree_index %= tree_num;
+}
+
 void loop()
 {
+  temp ++;
 //  curTime = millis();
 //  if(curTime-updTime>600000) {
 //    updTime = curTime;
@@ -108,15 +123,36 @@ void loop()
 //  mode = (curTime % 60000)/20000;  // change mode every 20s
 //  updateTime();
 //  if(mode==0) drawTime0(); else
-//  if(mode==1) drawTime1(); else drawTime2();
-  printCharX('C',font3x7, 20);
-  printCharX('A', font3x7, 40 );
+//  if(mode==1) drawTime1(); else drawTime2();  
+  srand( time(NULL) );
+
+  if (change_time == true){
+    interval = rand() % 20 + 10;
+    change_time = false;
+  }
+    
+  printf("%d\n", interval);
+  char person_state[] = {'=', '=', '=','=','=',  '='};
+  if(temp % interval == 0) {
+    change_time = true;
+    create_tree();
+    temp = 0;
+  }
+  printCharX(person_state[person_idx++],font3x7, 60);
+  person_idx %= 6;
+  for (int i=0; i<tree_num; i++){
+    if (tree[tree_index] != -1) 
+      printChar('@', font3x7, i);
+  }
   xPos %= NUM_MAX*8;
   idx ++;
   yPos = (idx%2) == 0 ? 0 : 3; 
   refreshAll();
   clr();
-  delay(100);
+  if (speed_ > 200) speed_--;
+  delay(speed_);
+//  int temp_speed = speed_;
+//  while(temp_speed--);
 }
 
 // =======================================================================
@@ -230,6 +266,14 @@ void printChar(unsigned char c, const uint8_t *font)
   if(xPos>NUM_MAX*8) return;
   int w = printCharX(c, font, xPos);
   xPos += w+1;
+}
+
+void printChar(unsigned char c, const uint8_t *font, unsigned int tree_idx)
+{
+  if(tree[tree_idx]>NUM_MAX*8) return;
+  int w = printCharX(c, font, tree[tree_idx]);
+  tree[tree_idx] += 1;
+  printf("tree: %d\n",  tree[tree_idx]);
 }
 
 // =======================================================================
