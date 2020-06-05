@@ -97,6 +97,7 @@ void setup()
 
 // =======================================================================
 
+int score = 0;
 unsigned int curTime,updTime=0;
 int dots,mode;
 int temp = 0;
@@ -104,34 +105,38 @@ int speed_ = 300;
 bool change_time = true;
 int interval;
 const int tree_num = 5;
-int tree [tree_num] = {-1, -1, -1, -1, -1};
-int tree_index = 0;
+int tree_index = 1;
 int person_idx = 0;
+int tree [tree_num] = {8, -1, -1, -1, -1};
 void create_tree(){
-    tree[tree_index++] = 0;
+    tree[tree_index++] = 8;
     tree_index %= tree_num;
 }
 
 void reset(){
-  tree_index = 0;
+  tree_index = 1;
   person_idx = 0;
   change_time = true;
   speed_ = 300;
   for (int i=0; i<tree_num; i++){
-    tree[i] = 0;
+    tree[i] = -1;
   }
+  tree[0] = 8;
+  temp = 0;
+  score = 0;
 }
 
 void loop()
 {
   temp ++;
+  score++;
   srand( time(NULL) );
-
+  drawScore();
   if (change_time == true){
     interval = int((rand() % 20 + 10) /2) *2;
     change_time = false;
   }
-  char person_state[] = {'?','?',  '=', '=','=', '=' , '>' , '>'};
+  char person_state[] = {'=','=','=', '='};
   if(temp % interval == 0) {
     change_time = true;
     create_tree();
@@ -139,28 +144,30 @@ void loop()
   }
   printCharX(person_state[person_idx],font3x7, 60);
   for (int i=0; i<tree_num; i++){
-    if ( 59 <= tree[i] && tree[i] <= 61 ){
-      if (person_state[person_idx] == '?' || person_state[person_idx] == '>'){
+    if ( 60 <= tree[i] && tree[i] <= 62 ){
+      if (person_state[person_idx] == '?' ){
         delay(3000);
         reset();
       }
     }
-    if (tree[i] - 60 == -1){
+    // tree with side person
+    if (tree[i] == 60 || tree[i] ==  62){
         printChar('(', font3x7, i);
-       
     }
-    else if (tree[i] - 60 == 1){
+    // tree with middle person
+    else if (tree[i]  == 61){
         printChar(')', font3x7, i);
     }
+    //only tree
     else if (tree[i] != -1) 
       printChar('@', font3x7, i);
   }
   person_idx++;
-  (person_idx) %= 8;
-  printf("%d", person_idx);
-  xPos %= NUM_MAX*8;
-  idx ++;
-  yPos = (idx%2) == 0 ? 0 : 3; 
+  (person_idx) %= 4;
+//  printf("%d", person_idx);
+//  xPos %= NUM_MAX*8;
+//  idx ++;
+//  yPos = (idx%2) == 0 ? 0 : 3; 
   refreshAll();
   clr();
   if (speed_ > 150) speed_--;
@@ -171,6 +178,14 @@ void loop()
 
 char* monthNames[] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
 char txt[30];
+
+void drawScore()
+{
+  yPos = 0;
+  xPos = (score/10 < 10) ? 4 : 0;
+  sprintf(txt,"%d",score/10);
+  printString(txt, font3x7);
+}
 
 void drawTime0()
 {
