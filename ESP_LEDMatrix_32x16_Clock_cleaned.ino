@@ -77,6 +77,7 @@ void setup()
   initMAX7219();
   sendCmdAll(CMD_SHUTDOWN, 1);
   sendCmdAll(CMD_INTENSITY, 0);
+  reset();
 //  DEBUG(Serial.print("Connecting to WiFi ");)
 //  WiFi.begin(ssid, password);
 //  clr();
@@ -101,7 +102,7 @@ int dots,mode;
 int temp = 0;
 int speed_ = 300;
 bool change_time = true;
-int interval =  10;
+int interval;
 const int tree_num = 5;
 int tree [tree_num] = {-1, -1, -1, -1, -1};
 int tree_index = 0;
@@ -111,50 +112,52 @@ void create_tree(){
     tree_index %= tree_num;
 }
 
+void reset(){
+  tree_index = 0;
+  person_idx = 0;
+  change_time = true;
+  speed_ = 300;
+  for (int i=0; i<tree_num; i++){
+    tree[i] = 0;
+  }
+}
+
 void loop()
 {
   temp ++;
-//  curTime = millis();
-//  if(curTime-updTime>600000) {
-//    updTime = curTime;
-//    getTime();  // update time every 600s=10m
-//  }
-//  dots = (curTime % 1000)<500;     // blink 2 times/sec
-//  mode = (curTime % 60000)/20000;  // change mode every 20s
-//  updateTime();
-//  if(mode==0) drawTime0(); else
-//  if(mode==1) drawTime1(); else drawTime2();  
   srand( time(NULL) );
 
   if (change_time == true){
     interval = int((rand() % 20 + 10) /2) *2;
     change_time = false;
   }
-    
-//  printf("%d\n", interval);
-  char person_state[] = {'=', '=', '=','=','=',  '='};
+  char person_state[] = {'?','?',  '=', '=','=', '=' , '>' , '>'};
   if(temp % interval == 0) {
     change_time = true;
     create_tree();
     temp = 0;
   }
-//  printCharX('(',font3x7, 35);
-//  printCharX(')',font3x7, 10);
-  printCharX(person_state[person_idx++],font3x7, 60);
-  person_idx %= 6;
+  printCharX(person_state[person_idx],font3x7, 60);
   for (int i=0; i<tree_num; i++){
-    if(tree[i]> 56){
-      printf("%d\n", tree[i]);
+    if ( 59 <= tree[i] && tree[i] <= 61 ){
+      if (person_state[person_idx] == '?' || person_state[person_idx] == '>'){
+        delay(3000);
+        reset();
+      }
     }
     if (tree[i] - 60 == -1){
-       printChar('(', font3x7, i);
+        printChar('(', font3x7, i);
+       
     }
     else if (tree[i] - 60 == 1){
-       printChar(')', font3x7, i);
+        printChar(')', font3x7, i);
     }
     else if (tree[i] != -1) 
       printChar('@', font3x7, i);
   }
+  person_idx++;
+  (person_idx) %= 8;
+  printf("%d", person_idx);
   xPos %= NUM_MAX*8;
   idx ++;
   yPos = (idx%2) == 0 ? 0 : 3; 
@@ -162,13 +165,10 @@ void loop()
   clr();
   if (speed_ > 150) speed_--;
   delay(speed_);
-//  int temp_speed = speed_;
-//  while(temp_speed--);
 }
 
 // =======================================================================
 
-//char* monthNames[] = {"STY","LUT","MAR","KWI","MAJ","CZE","LIP","SIE","WRZ","PAZ","LIS","GRU"};
 char* monthNames[] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
 char txt[30];
 
@@ -284,7 +284,6 @@ void printChar(unsigned char c, const uint8_t *font, unsigned int tree_idx)
   if(tree[tree_idx]>NUM_MAX*8) return;
   int w = printCharX(c, font, tree[tree_idx]);
   tree[tree_idx] += 1;
-//  printf("tree: %d\n",  tree[tree_idx]);
 }
 
 // =======================================================================
