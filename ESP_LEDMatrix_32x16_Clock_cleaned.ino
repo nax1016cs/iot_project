@@ -31,7 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
+#include <utility>
 #define NUM_MAX 8
 #define LINE_WIDTH 32
 #define ROTATE  90
@@ -48,6 +48,15 @@
 
 #define DEBUG(x)
 //#define DEBUG(x) x
+
+#define UP_TREE ';' 
+#define LOW_TREE '@' 
+#define PERSON '?' 
+#define PERSON_JUMP '=' 
+#define PERSON_LOW_TREE_SIDE '(' 
+#define PERSON_LOW_TREE_MID  ')' 
+#define PERSON_UP_TREE_SIDE  '*' 
+#define PERSON_UP_TREE_MID   '+' 
 
 #include "max7219.h"
 #include "fonts.h"
@@ -97,19 +106,25 @@ void setup()
 
 // =======================================================================
 
-int score = 0;
 unsigned int curTime,updTime=0;
 int dots,mode;
+// tree setting
+int score = 0;
 int temp = 0;
-int speed_ = 300;
+int speed_ = 200;
 bool change_time = true;
 int interval;
 const int tree_num = 5;
-int tree_index = 1;
+int tree_index = 0;
 int person_idx = 0;
-int tree [tree_num] = {8, -1, -1, -1, -1};
+//int tree [tree_num] = {-1, -1, -1, -1, -1};
+std::pair <char,int> tree[tree_num];
+
 void create_tree(){
-    tree[tree_index++] = 8;
+    srand( time(NULL) );
+    char temp = (rand() % 2 == 0 ) ? 59 :64;
+    printf("%c", temp);
+    tree[tree_index++] = std::make_pair(8, temp);
     tree_index %= tree_num;
 }
 
@@ -119,59 +134,66 @@ void reset(){
   change_time = true;
   speed_ = 300;
   for (int i=0; i<tree_num; i++){
-    tree[i] = -1;
+    tree[i] = std::make_pair(-1, 0);
   }
-  tree[0] = 8;
+  char tree_type = (rand() % 2 == 0 ) ? 59 :64;
+  tree[0] = std::make_pair(8,tree_type );
   temp = 0;
   score = 0;
 }
 
-void loop()
-{
+void play_game(){
   temp ++;
   score++;
   srand( time(NULL) );
   drawScore();
   if (change_time == true){
-    interval = int((rand() % 20 + 10) /2) *2;
+    interval = int(rand() % 20 + 10);
     change_time = false;
   }
-  char person_state[] = {'=','=','=', '='};
+  
   if(temp % interval == 0) {
     change_time = true;
     create_tree();
     temp = 0;
   }
-  printCharX(person_state[person_idx],font3x7, 60);
+  char person = (digitalRead(D1) == HIGH )? PERSON_JUMP: PERSON;
+  printCharX(person,font3x7, 60);
+  
   for (int i=0; i<tree_num; i++){
-    if ( 60 <= tree[i] && tree[i] <= 62 ){
-      if (person_state[person_idx] == '?' ){
+    if ( 60 <= tree[i].first && tree[i].first <= 62 ){
+      if ( (person == PERSON && tree[i].second == LOW_TREE)|| (person == PERSON_JUMP && tree[i].second == UP_TREE )){
         delay(3000);
         reset();
       }
     }
-    // tree with side person
-    if (tree[i] == 60 || tree[i] ==  62){
-        printChar('(', font3x7, i);
+    // low tree with side person
+    if ( (tree[i].first == 60 || tree[i].first ==  62)  ) {
+     if(tree[i].second == LOW_TREE) printChar(PERSON_LOW_TREE_SIDE, font3x7, i);
+     else if(tree[i].second == UP_TREE) printChar(PERSON_UP_TREE_SIDE, font3x7, i);
     }
-    // tree with middle person
-    else if (tree[i]  == 61){
-        printChar(')', font3x7, i);
+    // low tree with middle person
+    else if ( (tree[i].first  == 61)  )  {
+      if(tree[i].second == LOW_TREE) printChar(PERSON_LOW_TREE_MID, font3x7, i);
+      else if(tree[i].second == UP_TREE) printChar(PERSON_UP_TREE_MID, font3x7, i);
     }
-    //only tree
-    else if (tree[i] != -1) 
-      printChar('@', font3x7, i);
+    //only low tree
+    else if (tree[i].first != -1 ) {
+      if(tree[i].second == LOW_TREE) printChar(LOW_TREE, font3x7, i);
+      else if(tree[i].second == UP_TREE) printChar(UP_TREE, font3x7, i);
+    }
+    
   }
-  person_idx++;
-  (person_idx) %= 4;
-//  printf("%d", person_idx);
-//  xPos %= NUM_MAX*8;
-//  idx ++;
-//  yPos = (idx%2) == 0 ? 0 : 3; 
   refreshAll();
   clr();
-  if (speed_ > 150) speed_--;
+  person_idx --;
+  if (speed_ > 100) speed_--;
   delay(speed_);
+}
+
+void loop()
+{
+  play_game();
 }
 
 // =======================================================================
@@ -296,9 +318,9 @@ void printChar(unsigned char c, const uint8_t *font)
 
 void printChar(unsigned char c, const uint8_t *font, unsigned int tree_idx)
 {
-  if(tree[tree_idx]>NUM_MAX*8) return;
-  int w = printCharX(c, font, tree[tree_idx]);
-  tree[tree_idx] += 1;
+  if(tree[tree_idx].first>NUM_MAX*8) return;
+  int w = printCharX(c, font, tree[tree_idx].first);
+  tree[tree_idx].first += 1;
 }
 
 // =======================================================================
