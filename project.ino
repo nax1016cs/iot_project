@@ -28,10 +28,7 @@
 */
 
 #include <ESP8266WiFi.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <utility>
+
 #define NUM_MAX 8
 #define LINE_WIDTH 32
 #define ROTATE  90
@@ -49,6 +46,9 @@
 #define DEBUG(x)
 //#define DEBUG(x) x
 
+#include "max7219.h"
+#include "fonts.h"
+
 #define UP_TREE ';' 
 #define LOW_TREE '@' 
 #define PERSON '?' 
@@ -58,8 +58,6 @@
 #define PERSON_UP_TREE_SIDE  '*' 
 #define PERSON_UP_TREE_MID   '+' 
 
-#include "max7219.h"
-#include "fonts.h"
 
 // =======================================================================
 // Your config below!
@@ -78,36 +76,7 @@ String buf="";
 
 int xPos=0, yPos=0;
 int clockOnly = 0;
-int idx = 0;
-void setup() 
-{
-  buf.reserve(500);
-  Serial.begin(115200);
-  initMAX7219();
-  sendCmdAll(CMD_SHUTDOWN, 1);
-  sendCmdAll(CMD_INTENSITY, 0);
-  reset();
-//  DEBUG(Serial.print("Connecting to WiFi ");)
-//  WiFi.begin(ssid, password);
-//  clr();
-//  xPos=0;
-//  printString("CONNECT..", font3x7);
-//  refreshAll();
-//  while (WiFi.status() != WL_CONNECTED) {
-//    delay(500); DEBUG(Serial.print("."));
-//  }
-//  clr();
-//  xPos=0;
-//  DEBUG(Serial.println(""); Serial.print("MyIP: "); Serial.println(WiFi.localIP());)
-//  printString((WiFi.localIP().toString()).c_str(), font3x7);
-//  refreshAll();
-//  getTime();
-}
 
-// =======================================================================
-
-unsigned int curTime,updTime=0;
-int dots,mode;
 // tree setting
 int score = 0;
 int temp = 0;
@@ -119,13 +88,43 @@ int tree_index = 0;
 int person_idx = 0;
 //int tree [tree_num] = {-1, -1, -1, -1, -1};
 std::pair <char,int> tree[tree_num];
+int prev_ = 0;
 
-void create_tree(){
-    srand( time(NULL) );
-    char temp = (rand() % 2 == 0 ) ? 59 :64;
-    printf("%c", temp);
-    tree[tree_index++] = std::make_pair(8, temp);
-    tree_index %= tree_num;
+char* monthNames[] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
+char txt[30];
+
+void setup() 
+{
+  buf.reserve(500);
+  Serial.begin(115200);
+  initMAX7219();
+  sendCmdAll(CMD_SHUTDOWN, 1);
+  sendCmdAll(CMD_INTENSITY, 0);
+  DEBUG(Serial.print("Connecting to WiFi ");)
+  WiFi.begin(ssid, password);
+  clr();
+  xPos=0;
+  printString("CONNECT..", font3x7);
+  refreshAll();
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500); DEBUG(Serial.print("."));
+  }
+  clr();
+  xPos=0;
+  DEBUG(Serial.println(""); Serial.print("MyIP: "); Serial.println(WiFi.localIP());)
+  printString((WiFi.localIP().toString()).c_str(), font3x7);
+  refreshAll();
+  getTime();
+  reset();
+}
+
+
+void drawScore()
+{
+  yPos = 0;
+  xPos = (score/10 < 10) ? 4 : 0;
+  sprintf(txt,"%d",score/10);
+  printString(txt, font3x7);
 }
 
 void reset(){
@@ -142,6 +141,13 @@ void reset(){
   score = 0;
 }
 
+void create_tree(){
+    srand( time(NULL) );
+    char temp = (rand() % 2 == 0 ) ? 59 :64;
+    printf("%c", temp);
+    tree[tree_index++] = std::make_pair(8, temp);
+    tree_index %= tree_num;
+}
 void play_game(){
   temp ++;
   score++;
@@ -184,30 +190,80 @@ void play_game(){
     }
     
   }
+  analogWrite(A0, score/10 * 512);
   refreshAll();
-  clr();
+  clr_game();
   person_idx --;
   if (speed_ > 100) speed_--;
   delay(speed_);
 }
 
+int decode(int first, int second, int third){
+  return third*4  +second*2 +  first;
+}
+// =======================================================================
+
+unsigned int curTime,updTime=0;
+int dots,mode;
+
 void loop()
 {
-  play_game();
+  int first = (digitalRead(D2) == HIGH) ? 1:0;
+  int second = (digitalRead(D4) == HIGH) ? 1:0;
+  int third = ( digitalRead(D5)== HIGH) ? 1:0;
+  int number = 0;
+  prev_ = number;
+  number = decode(first,second ,third );
+  if (prev_ != number){
+    reset();
+    clr();
+  }
+  printf("first: %d, second: %d, third: %d, total: %d\n",first,second,third,number  );
+  curTime = millis();
+  if(curTime-updTime>600000) {
+    updTime = curTime;
+    getTime();  // update time every 600s=10m
+  }
+  updateTime();
+  
+  switch(number){
+    case 0:
+      play_game();
+      break;
+    case 1:
+      dots = (curTime % 1000)<500;
+      drawTime0();
+      refreshAll();
+      delay(100);
+      break;
+    case 2:
+      dots = (curTime % 1000)<500;
+      drawTime1();
+      refreshAll();
+      delay(100);
+      break;
+    case 3:
+      dots = (curTime % 1000)<500;
+      drawTime2();
+      refreshAll();
+      delay(100);
+      break;
+    case 4:
+      break;
+    case 5:
+      break;
+    case 6:
+      break;
+    case 7:
+      break;  
+  }
+  
 }
 
 // =======================================================================
 
-char* monthNames[] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
-char txt[30];
+//char* monthNames[] = {"STY","LUT","MAR","KWI","MAJ","CZE","LIP","SIE","WRZ","PAZ","LIS","GRU"};
 
-void drawScore()
-{
-  yPos = 0;
-  xPos = (score/10 < 10) ? 4 : 0;
-  sprintf(txt,"%d",score/10);
-  printString(txt, font3x7);
-}
 
 void drawTime0()
 {
@@ -313,7 +369,7 @@ void printChar(unsigned char c, const uint8_t *font)
 {
   if(xPos>NUM_MAX*8) return;
   int w = printCharX(c, font, xPos);
-  xPos += w+1;
+  xPos+=w+1;
 }
 
 void printChar(unsigned char c, const uint8_t *font, unsigned int tree_idx)
@@ -436,7 +492,7 @@ void updateTime()
 {
   long curEpoch = localEpoc + ((millis() - localMillisAtUpdate) / 1000);
   long epoch = (curEpoch + 3600 * (utcOffset+summerTime) + 86400L) % 86400L;
-  h = (((epoch  % 86400L) / 3600)  + 6) %24 ;
+  h = (((epoch  % 86400L) / 3600) +6 ) % 24;
   m = (epoch % 3600) / 60;
   s = epoch % 60;
 }

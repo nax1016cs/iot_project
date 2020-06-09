@@ -98,10 +98,14 @@ void refreshAll() {
 }
 
 
-void clr()
+void clr_game()
 {
   for (int i = 0; i < NUM_MAX*8 - 4 ; i++) scr[i] = 0;
   scr[63] = 0;
+}
+
+void clr(){
+  for(int i=0; i<NUM_MAX*8; i++) scr[i] = 0;
 }
 
 void scrollLeft()
