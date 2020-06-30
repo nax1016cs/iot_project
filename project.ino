@@ -28,6 +28,9 @@
 */
 
 #include <ESP8266WiFi.h>
+#include <fstream>
+#include <FS.h>
+#include <string.h>
 
 #define NUM_MAX 8
 #define LINE_WIDTH 32
@@ -50,8 +53,12 @@
 #include "fonts.h"
 
 #define UP_TREE ';' 
-#define LOW_TREE '@' 
 #define PERSON '?' 
+#define UP_TREE ';' 
+#define LOW_TREE '@' 
+#define LEFT_HEART '#' 
+#define MID_HEART '$' 
+#define RIGHT_HEART '%' 
 #define PERSON_JUMP '=' 
 #define PERSON_LOW_TREE_SIDE '(' 
 #define PERSON_LOW_TREE_MID  ')' 
@@ -59,11 +66,12 @@
 #define PERSON_UP_TREE_MID   '+' 
 
 
+
 // =======================================================================
 // Your config below!
 // =======================================================================
-const char* ssid     = "nCOV-19";     // SSID of local network
-const char* password = "qwerty654321";   // Password on network
+const char* ssid     = "HAHA";     // SSID of local network
+const char* password = "0987654321";   // Password on network
 long utcOffset = 1;                    // UTC for Warsaw,Poland
 // =======================================================================
 
@@ -89,6 +97,13 @@ int person_idx = 0;
 //int tree [tree_num] = {-1, -1, -1, -1, -1};
 std::pair <char,int> tree[tree_num];
 int prev_ = 0;
+
+String time_;
+String stock;
+String msg; // msg from website
+
+//for print string
+int firstPos = 0;
 
 char* monthNames[] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
 char txt[30];
@@ -116,6 +131,7 @@ void setup()
   refreshAll();
   getTime();
   reset();
+//  SPIFFS.begin();
 }
 
 
@@ -144,11 +160,17 @@ void reset(){
 void create_tree(){
     srand( time(NULL) );
     char temp = (rand() % 2 == 0 ) ? 59 :64;
-    printf("%c", temp);
     tree[tree_index++] = std::make_pair(8, temp);
     tree_index %= tree_num;
 }
 void play_game(){
+//  File f = SPIFFS.open("/t.txt", "r");
+//  if (!f) printf("failed to open the file");
+//  while(f.available()){
+//    Serial.write(f.read());
+//  }
+//  f.close();
+  
   temp ++;
   score++;
   srand( time(NULL) );
@@ -190,12 +212,12 @@ void play_game(){
     }
     
   }
-  analogWrite(A0, score/10 * 512);
   refreshAll();
   clr_game();
   person_idx --;
   if (speed_ > 100) speed_--;
   delay(speed_);
+
 }
 
 int decode(int first, int second, int third){
@@ -203,28 +225,90 @@ int decode(int first, int second, int third){
 }
 // =======================================================================
 
+void print_NCTU(){
+  if(firstPos>NUM_MAX*8)firstPos = 0;
+  MyprintChar('N', font3x7);
+  int temp_pos = firstPos -3;
+  MyprintChar('C', font3x7);
+  MyprintChar('T', font3x7);
+  MyprintChar('U', font3x7);
+  firstPos = temp_pos;
+}
+
+void print_iot(){
+  if(firstPos>NUM_MAX*8)firstPos = 0;
+  MyprintChar('I', font3x7);
+  int temp_pos = firstPos -1;
+  MyprintChar('#', font3x7);
+  firstPos -= 1;
+  MyprintChar('$', font3x7);
+  firstPos -= 1;
+  MyprintChar('%', font3x7);
+  MyprintChar('I', font3x7);
+  MyprintChar('O', font3x7);
+  MyprintChar('T', font3x7);
+  firstPos = temp_pos;  
+}
+
+void print_msg(String msg){
+  if(firstPos>NUM_MAX*8)firstPos = 0;
+//  Serial.print("Got message: ");
+//  Serial.print(msg);
+//  printf("%s", msg);
+  MyprintChar(msg[1], font3x7);
+  int temp_pos = firstPos -2;
+  for (int i = 2; i<msg.length(); i++){
+    MyprintChar(msg[i], font3x7);
+  }
+  firstPos = temp_pos;  
+}
+
+//void print_stock(String stock){
+//  if(firstPos>NUM_MAX*8)firstPos = 0;
+//  MyprintChar(stock[0], font3x7);
+//  int temp_pos = firstPos -1;
+//  MyprintChar('#', font3x7);
+//  firstPos -= 1;
+//  MyprintChar('$', font3x7);
+//  firstPos -= 1;
+//  MyprintChar('%', font3x7);
+//  MyprintChar('I', font3x7);
+//  MyprintChar('O', font3x7);
+//  MyprintChar('T', font3x7);
+//  firstPos = temp_pos;  
+//}
+
 unsigned int curTime,updTime=0;
 int dots,mode;
-
+int ct = 0;
 void loop()
 {
+//  ct++;
+//  if (ct==100){
+//    getTime();
+//    ct = 0;
+//  }
+
   int first = (digitalRead(D2) == HIGH) ? 1:0;
   int second = (digitalRead(D4) == HIGH) ? 1:0;
   int third = ( digitalRead(D5)== HIGH) ? 1:0;
   int number = 0;
   prev_ = number;
   number = decode(first,second ,third );
+//  printf("first: %d, second: %d, third %d, number: %d\n", first, second, third, number);
   if (prev_ != number){
     reset();
     clr();
   }
-  printf("first: %d, second: %d, third: %d, total: %d\n",first,second,third,number  );
   curTime = millis();
   if(curTime-updTime>600000) {
     updTime = curTime;
     getTime();  // update time every 600s=10m
   }
   updateTime();
+  //add
+//  getTime();
+  
   
   switch(number){
     case 0:
@@ -249,12 +333,26 @@ void loop()
       delay(100);
       break;
     case 4:
+      print_NCTU();
+      refreshAll();
+      delay(200);
       break;
     case 5:
+      print_iot();
+      refreshAll();
+      delay(200);
       break;
     case 6:
+      getTime();
+      print_msg(stock);
+      refreshAll();
+      delay(100);
       break;
     case 7:
+      getTime();
+      print_msg(msg);
+      refreshAll();
+      delay(100);
       break;  
   }
   
@@ -372,6 +470,13 @@ void printChar(unsigned char c, const uint8_t *font)
   xPos+=w+1;
 }
 
+void MyprintChar(unsigned char c, const uint8_t *font)
+{
+  if(xPos>NUM_MAX*8) return;
+  int w = printCharX(c, font, firstPos);
+  firstPos += w+1;
+}
+
 void printChar(unsigned char c, const uint8_t *font, unsigned int tree_idx)
 {
   if(tree[tree_idx].first>NUM_MAX*8) return;
@@ -394,30 +499,50 @@ void printString(String str, const uint8_t *font)
 
 // =======================================================================
 
+
 void getTime()
 {
   WiFiClient client;
   DEBUG(Serial.print("connecting to www.google.com ...");)
-  if(!client.connect("www.google.com", 80)) {
-    DEBUG(Serial.println("connection failed");)
+  if(!client.connect("b62ee90669ff.ngrok.io", 80)) {
+    DEBUG(Serial.println("connection failed.....");)
     return;
   }
   client.print(String("GET / HTTP/1.1\r\n") +
-               String("Host: www.google.com\r\n") +
+               String("Host: b62ee90669ff.ngrok.io\r\n") +
                String("Connection: close\r\n\r\n"));
 
   int repeatCounter = 10;
-  while (!client.available() && repeatCounter--) {
+  /*while (!client.available() && repeatCounter--) {
     delay(200); DEBUG(Serial.println("y."));
-  }
+  }*/
 
   String line;
   client.setNoDelay(false);
   int dateFound = 0;
-  while(client.connected() && client.available() && !dateFound) {
+  while(client.connected() /*&& client.available()*/ && !dateFound) {
     line = client.readStringUntil('\n');
-    line.toUpperCase();
-    // Date: Thu, 19 Nov 2015 20:25:40 GMT
+//    line.toUpperCase();
+    Serial.println(line);
+
+    if(line.startsWith("$")){
+//      Serial.println(line);
+      //time
+       time_= line; 
+    }
+    else if(line.startsWith("@")){
+//      Serial.println(line);
+      //string
+       msg = line;
+    }
+    else if(line.startsWith("#")){
+//      Serial.println(line);
+      //string
+       stock = line;
+    }
+    
+
+//     Date: Thu, 19 Nov 2015 20:25:40 GMT
     if(line.startsWith("DATE: ")) {
       localMillisAtUpdate = millis();
       dateFound = 1;
@@ -436,8 +561,9 @@ void getTime()
       DEBUG(Serial.println(String(h) + ":" + String(m) + ":" + String(s)+"   Date: "+day+"."+month+"."+year+" ["+dayOfWeek+"] "+(utcOffset+summerTime)+"h");)
       localEpoc = h * 60 * 60 + m * 60 + s;
     }
+    
   }
-  client.stop();
+//  client.stop();
 }
 
 // =======================================================================
