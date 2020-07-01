@@ -70,8 +70,8 @@
 // =======================================================================
 // Your config below!
 // =======================================================================
-const char* ssid     = "HAHA";     // SSID of local network
-const char* password = "0987654321";   // Password on network
+const char* ssid     = "221";     // SSID of local network
+const char* password = "123456789";   // Password on network
 long utcOffset = 1;                    // UTC for Warsaw,Poland
 // =======================================================================
 
@@ -115,18 +115,19 @@ void setup()
   initMAX7219();
   sendCmdAll(CMD_SHUTDOWN, 1);
   sendCmdAll(CMD_INTENSITY, 0);
-  DEBUG(Serial.print("Connecting to WiFi ");)
+//  DEBUG(Serial.print("Connecting to WiFi ");)
   WiFi.begin(ssid, password);
   clr();
   xPos=0;
   printString("CONNECT..", font3x7);
   refreshAll();
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500); DEBUG(Serial.print("."));
+    delay(500);
+//    DEBUG(Serial.print("."));
   }
   clr();
   xPos=0;
-  DEBUG(Serial.println(""); Serial.print("MyIP: "); Serial.println(WiFi.localIP());)
+//  DEBUG(Serial.println(""); Serial.print("MyIP: "); Serial.println(WiFi.localIP());)
   printString((WiFi.localIP().toString()).c_str(), font3x7);
   refreshAll();
   getTime();
@@ -212,6 +213,7 @@ void play_game(){
     }
     
   }
+  Serial.println(score);
   refreshAll();
   clr_game();
   person_idx --;
@@ -498,18 +500,18 @@ void printString(String str, const uint8_t *font)
 }
 
 // =======================================================================
-
+  
 
 void getTime()
 {
   WiFiClient client;
-  DEBUG(Serial.print("connecting to www.google.com ...");)
-  if(!client.connect("b62ee90669ff.ngrok.io", 80)) {
-    DEBUG(Serial.println("connection failed.....");)
+//  DEBUG(Serial.print("connecting to www.google.com ...");)
+  if(!client.connect("140.113.66.153", 80)) {
+//    DEBUG(Serial.println("connection failed.....");)
     return;
   }
   client.print(String("GET / HTTP/1.1\r\n") +
-               String("Host: b62ee90669ff.ngrok.io\r\n") +
+               String("Host: 140.113.66.153\r\n") +
                String("Connection: close\r\n\r\n"));
 
   int repeatCounter = 10;
@@ -523,7 +525,7 @@ void getTime()
   while(client.connected() /*&& client.available()*/ && !dateFound) {
     line = client.readStringUntil('\n');
 //    line.toUpperCase();
-    Serial.println(line);
+//    Serial.println(line);
 
     if(line.startsWith("$")){
 //      Serial.println(line);
@@ -543,13 +545,13 @@ void getTime()
     
 
 //     Date: Thu, 19 Nov 2015 20:25:40 GMT
-    if(line.startsWith("DATE: ")) {
+    if(line.startsWith("AATE: ")) {
       localMillisAtUpdate = millis();
       dateFound = 1;
       date = line.substring(6, 22);
       date.toUpperCase();
       decodeDate(date);
-      //Serial.println(line);
+//      Serial.println(line);
       h = line.substring(23, 25).toInt();
       m = line.substring(26, 28).toInt();
       s = line.substring(29, 31).toInt();
@@ -558,7 +560,7 @@ void getTime()
         if(++day>31) { day=1; month++; };  // needs better patch
         if(++dayOfWeek>7) dayOfWeek=1; 
       }
-      DEBUG(Serial.println(String(h) + ":" + String(m) + ":" + String(s)+"   Date: "+day+"."+month+"."+year+" ["+dayOfWeek+"] "+(utcOffset+summerTime)+"h");)
+//      DEBUG(Serial.println(String(h) + ":" + String(m) + ":" + String(s)+"   Date: "+day+"."+month+"."+year+" ["+dayOfWeek+"] "+(utcOffset+summerTime)+"h");)
       localEpoc = h * 60 * 60 + m * 60 + s;
     }
     
