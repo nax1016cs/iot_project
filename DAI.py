@@ -27,7 +27,7 @@ allDead=False
 
 while True:
     try:
-        f = open('CoolTerm Capture 2020-06-14 11-37-50.txt','r')
+        f = open('CoolTerm Capture 2020-07-01 20-31-43','r')
         lines = f.read().splitlines()
         score = int(lines[-1]) 
         DAN.push ('Dummy_Sensor', score,  score)
